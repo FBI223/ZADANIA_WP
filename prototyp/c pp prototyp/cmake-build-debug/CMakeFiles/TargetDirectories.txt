@@ -1,0 +1,3 @@
+C:/Users/msztu/Desktop/UJ_ZIMOWY_25/PEGAZ/WP/zadania/prototyp/c pp prototyp/cmake-build-debug/CMakeFiles/c_pp_prototyp.dir
+C:/Users/msztu/Desktop/UJ_ZIMOWY_25/PEGAZ/WP/zadania/prototyp/c pp prototyp/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/msztu/Desktop/UJ_ZIMOWY_25/PEGAZ/WP/zadania/prototyp/c pp prototyp/cmake-build-debug/CMakeFiles/rebuild_cache.dir
