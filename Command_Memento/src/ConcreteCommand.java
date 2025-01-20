@@ -1,14 +1,17 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 interface Command {
     void execute();
+    void undo();
 }
 
 interface CommandSet {
     void execute(int temp);
+    void undo();
 }
 
-// Odbiorca
 class Light {
     void turnOn() {
         System.out.println("Światło włączone");
@@ -38,9 +41,6 @@ class Shades{
 
 
 
-
-
-// Klasa Memento przechowuje stan
 class Memento {
     private final int state;
 
@@ -53,26 +53,8 @@ class Memento {
     }
 }
 
-// Klasa Originator tworzy i przywraca Memento
-class ThermostatEditor {
-    private int content;
 
-    public void setContent(int content) {
-        this.content = content;
-    }
 
-    public int getContent() {
-        return content;
-    }
-
-    public Memento save() {
-        return new Memento(content);
-    }
-
-    public void restore(Memento memento) {
-        content = memento.getState();
-    }
-}
 
 
 
@@ -82,46 +64,63 @@ class ThermostatEditor {
 
 class Thermostat{
 
-    private int content;
+    private int temp;
 
-    public void setContent(int content) {
-        System.out.println("temperature set to " + content);
-        this.content = content;
+
+    public void setTemp(int temp  ) {
+        System.out.println("temperature set to " + temp);
+        this.temp = temp;
     }
 
-    public int getContent() {
-        return content;
+    public int getTemp() {
+        return temp;
     }
 
     public Memento save() {
-        return new Memento(content);
+        return new Memento(temp);
     }
 
     public void restore(Memento memento) {
-        content = memento.getState();
+        temp = memento.getState();
+        System.out.println("temperature reset to " + temp);
     }
+
 }
 
 
 
 
-class History {
-    private Stack<Memento> history = new Stack<>();
+class HistoryOfThermostat {
+    private List<Memento> history = new ArrayList<>();
+    public int size;
 
-    public void save(Memento memento) {
-        history.push(memento);
+    public Memento getLastVersion()
+    {
+        return history.getLast();
     }
 
-    public Memento restoreLast() {
-        if (!history.isEmpty()) {
-            System.out.println(  "ustawienie ostatniej temp = " +  history.pop().getState());
-            return history.pop();
-        } else
+    public void add(Memento memento) {
+        history.add(memento);
+        size++;
+    }
+
+    public void delete(Memento memento) {
+        if ( history.contains(memento) )
         {
-            System.out.println("no history");
+            history.remove(memento);
+            size--;
         }
-        return null;
+
     }
+
+    public Memento get(int index) {
+        return history.get(index);
+    }
+
+    public boolean isEmpty() {
+        return history.isEmpty();
+    }
+
 }
 
 
@@ -144,6 +143,11 @@ class TurnOnLightCommand implements Command {
     public void execute() {
         light.turnOn();
     }
+
+    @Override
+    public void undo() {
+        light.turnOff();
+    }
 }
 
 
@@ -158,6 +162,11 @@ class TurnOffLightCommand implements Command {
     @Override
     public void execute() {
         light.turnOff();
+    }
+
+    @Override
+    public void undo() {
+        light.turnOn();
     }
 }
 
@@ -179,6 +188,11 @@ class TurnOnShadesCommand implements Command {
     public void execute() {
         shades.goingUp();
     }
+
+    @Override
+    public void undo() {
+        shades.goingDown();
+    }
 }
 
 
@@ -193,6 +207,11 @@ class TurnOffShadesCommand implements Command {
     @Override
     public void execute() {
         shades.goingDown();
+    }
+
+    @Override
+    public void undo() {
+        shades.goingUp();
     }
 }
 
@@ -209,6 +228,11 @@ class StopShadesCommand implements Command {
     public void execute() {
         shades.pauseGoingSomewhere();
     }
+
+    @Override
+    public void undo() {
+        shades.pauseGoingSomewhere();
+    }
 }
 
 
@@ -217,13 +241,24 @@ class StopShadesCommand implements Command {
 
 class SetTemperatureCommand implements CommandSet {
     Thermostat thermostat;
-    SetTemperatureCommand(Thermostat thermostat) {
+    HistoryOfThermostat history;
+
+
+    SetTemperatureCommand(Thermostat thermostat ,HistoryOfThermostat history ) {
         this.thermostat = thermostat;
+        this.history = history;
     }
 
     @Override
     public void execute(int temp) {
-        thermostat.setContent(temp);
+        history.add(thermostat.save()); // zapisanie aktualnego stanu przed zapisem
+        thermostat.setTemp(temp);
+    }
+
+    @Override
+    public void undo() {
+        thermostat.setTemp(history.getLastVersion().getState());
+        history.delete(history.getLastVersion());
     }
 }
 
@@ -272,6 +307,11 @@ class RemoteControl {
     public void SetValue(int value) {
         commandSet.execute(value);
     }
+
+    public void undoLastCommandSet() {
+        commandSet.undo();
+    }
+
 
 }
 
@@ -338,12 +378,19 @@ public class ConcreteCommand {
 
 
         Thermostat thermostat = new Thermostat();
+        HistoryOfThermostat history = new HistoryOfThermostat();
 
-        CommandSet commandSet = new SetTemperatureCommand(thermostat);
+        CommandSet commandSet = new SetTemperatureCommand(thermostat,history);
         remote.setCommandSet(commandSet);
 
 
 
+        remote.SetValue(18);
+        remote.SetValue(20);
+        remote.SetValue(22);
+        remote.undoLastCommandSet();
+        remote.undoLastCommandSet();
+        remote.SetValue(30);
 
 
 
